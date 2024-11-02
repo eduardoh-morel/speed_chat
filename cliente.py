@@ -1,15 +1,12 @@
 import socket
 import threading
 
-# Configurações do cliente
-HOST = '10.1.24.10'  # Deve ser o mesmo IP do servidor
-PORT = 5000  # Mesma porta do servidor
+HOST = '10.1.24.10'  
+PORT = 5000  
 
-# Inicializa o socket do cliente
 cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 cliente.connect((HOST, PORT))
 
-# Função para receber mensagens do servidor
 def receber_mensagens():
     while True:
         try:
@@ -20,7 +17,6 @@ def receber_mensagens():
             cliente.close()
             break
 
-# Função para enviar mensagens para o servidor
 def enviar_mensagens():
     while True:
         mensagem = input('')
