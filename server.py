@@ -1,18 +1,15 @@
 import socket
 import threading
 
-# Configurações do servidor
-HOST = '10.1.24.10'  # Endereço IP local (para testes locais)
-PORT = 5000  # Porta de comunicação
+HOST = '10.1.24.10' 
+PORT = 5000 
 
-# Inicializa o socket do servidor
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
 
-clientes = []  # Lista para armazenar todos os clientes conectados
+clientes = []  
 
-# Função para enviar mensagem para todos os clientes conectados
 def broadcast(mensagem, cliente):
     for cl in clientes:
         if cl != cliente:
@@ -22,7 +19,6 @@ def broadcast(mensagem, cliente):
                 cl.close()
                 clientes.remove(cl)
 
-# Função para lidar com a conexão de cada cliente
 def handle_cliente(cliente):
     while True:
         try:
@@ -33,7 +29,6 @@ def handle_cliente(cliente):
             cliente.close()
             break
 
-# Função principal do servidor
 def main():
     print("Servidor rodando...")
     while True:
