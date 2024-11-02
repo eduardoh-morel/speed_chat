@@ -6,7 +6,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-# Lista para armazenar o histórico de mensagens
 historico_mensagens = []
 
 @app.route('/')
@@ -15,19 +14,17 @@ def index():
 
 @socketio.on('connect')
 def handle_connect():
-    # Envia o histórico de mensagens quando um usuário se conecta
+    
     emit('historico', historico_mensagens)
 
 @socketio.on('message')
 def handle_message(data):
-    # Adiciona o horário da mensagem
+    
     hora = datetime.now().strftime('%H:%M')
     data['hora'] = hora
     
-    # Armazena a mensagem no histórico
     historico_mensagens.append(data)
     
-    # Limita o histórico a, por exemplo, as últimas 100 mensagens
     if len(historico_mensagens) > 100:
         historico_mensagens.pop(0)
     
