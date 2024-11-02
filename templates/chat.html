@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Distribuído</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="chat-container">
+        <div id="user-info">
+            <input type="text" id="username" placeholder="Digite seu nome" required maxlength="20">
+            <button onclick="setUsername()">Entrar no Chat</button>
+        </div>        
+        <div id="chat-box" class="hidden">
+            <div id="messages"></div>
+            <div id="message-input-container">
+                <textarea id="message-input" placeholder="Digite sua mensagem" oninput="adjustTextareaHeight()" rows="1"></textarea>
+                <button onclick="sendMessage()" id="send-button" disabled>Enviar</button>
+            </div>            
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let username = "";
+
+        function setUsername() {
+            const input = document.getElementById('username');
+            username = input.value.trim();
+            if (username) {
+                document.getElementById('user-info').classList.add('hidden');
+                document.getElementById('chat-box').classList.remove('hidden');
+                
+                // Habilitar o campo de mensagem e o botão de enviar
+                document.getElementById('message-input').disabled = false;
+                document.getElementById('send-button').disabled = false;
+            } else {
+                alert("Por favor, insira um nome antes de entrar no chat.");
+            }
+        }
+
+        socket.on('historico', function(historico) {
+            const messages = document.getElementById('messages');
+            historico.forEach(data => {
+                addMessage(data);
+            });
+        });
+
+        socket.on('message', function(data) {
+            addMessage(data);
+        });
+
+        function addMessage(data) {
+            const messages = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(data.username === username ? 'sent' : 'received');
+
+            const nameElement = document.createElement('p');
+            nameElement.classList.add('username');
+            nameElement.textContent = `${data.username} - ${data.hora}`;
+
+            const textElement = document.createElement('p');
+            textElement.classList.add('text');
+            textElement.textContent = data.message;
+
+            messageElement.appendChild(nameElement);
+            messageElement.appendChild(textElement);
+            messages.appendChild(messageElement);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            if (message) {
+                socket.send({ username: username, message: message });
+                input.value = '';
+            }
+        }
+
+        function formatMessage(text, maxLength = 35) {
+            const words = text.split(" ");
+            let formattedText = "";
+            let line = "";
+
+            words.forEach(word => {
+                if ((line + word).length > maxLength) {
+                    formattedText += line.trim() + "\n"; // Adiciona uma nova linha
+                    line = ""; // Reseta a linha
+                }
+                line += word + " ";
+            });
+
+            // Adiciona qualquer texto restante
+            formattedText += line.trim();
+            return formattedText;
+        }
+
+        function addMessage(data) {
+            const messages = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(data.username === username ? 'sent' : 'received');
+
+            const nameElement = document.createElement('p');
+            nameElement.classList.add('username');
+            nameElement.textContent = `${data.username} - ${data.hora}`;
+
+            const textElement = document.createElement('p');
+            textElement.classList.add('text');
+            textElement.textContent = formatMessage(data.message);
+
+            messageElement.appendChild(nameElement);
+            messageElement.appendChild(textElement);
+            messages.appendChild(messageElement);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+    </script>
+</body>
+</html>
