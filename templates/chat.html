@@ -7,20 +7,30 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div id="chat-container">
-        <div id="user-info">
-            <input type="text" id="username" placeholder="Digite seu nome" required maxlength="20">
-            <button onclick="setUsername()">Entrar no Chat</button>
-        </div>        
-        <div id="chat-box" class="hidden">
-            <div id="messages"></div>
-            <div id="message-input-container">
-                <textarea id="message-input" placeholder="Digite sua mensagem" oninput="adjustTextareaHeight()" rows="1"></textarea>
-                <button onclick="sendMessage()" id="send-button" disabled>Enviar</button>
-            </div>            
+    <img id="img_speed" src="static/speedchat.png" alt="speed">
+
+    <div id="all">
+        <div id="chat-container">
+            <!-- Entrada de nome -->
+            <div id="user-info">
+                <input type="text" id="username" placeholder="Digite seu nome" required maxlength="20">
+                <button onclick="setUsername()">Entrar no Chat</button>
+            </div>
+
+            <!-- Área de mensagens -->
+            <div id="chat-box" class="hidden">
+                <div id="messages"></div>
+                <div id="message-input-container">
+                    <textarea id="message-input" placeholder="Digite sua mensagem" oninput="adjustTextareaHeight()" rows="1" disabled></textarea>
+                    <input type="file" id="image-input" accept="image/*" onchange="sendImage()" hidden>
+                    <button onclick="triggerImageUpload()">📷</button>
+                    <button onclick="sendMessage()" id="send-button" disabled>Enviar</button>
+                </div>
+                
+            </div>
         </div>
     </div>
-
+    <img id="img_speedo" src="static/speedchat.png" alt="speed">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
         const socket = io();
@@ -32,8 +42,6 @@
             if (username) {
                 document.getElementById('user-info').classList.add('hidden');
                 document.getElementById('chat-box').classList.remove('hidden');
-                
-                // Habilitar o campo de mensagem e o botão de enviar
                 document.getElementById('message-input').disabled = false;
                 document.getElementById('send-button').disabled = false;
             } else {
@@ -43,9 +51,7 @@
 
         socket.on('historico', function(historico) {
             const messages = document.getElementById('messages');
-            historico.forEach(data => {
-                addMessage(data);
-            });
+            historico.forEach(data => addMessage(data));
         });
 
         socket.on('message', function(data) {
@@ -62,24 +68,25 @@
             nameElement.classList.add('username');
             nameElement.textContent = `${data.username} - ${data.hora}`;
 
-            const textElement = document.createElement('p');
-            textElement.classList.add('text');
-            textElement.textContent = data.message;
-
             messageElement.appendChild(nameElement);
-            messageElement.appendChild(textElement);
+
+            if (data.type === 'image') {
+                const imgElement = document.createElement('img');
+                imgElement.src = data.message; // Base64 da imagem
+                imgElement.alt = 'Imagem enviada';
+                imgElement.classList.add('message-image');
+                messageElement.appendChild(imgElement);
+            } else {
+                const textElement = document.createElement('p');
+                textElement.classList.add('text');
+                textElement.textContent = formatMessage(data.message);
+                messageElement.appendChild(textElement);
+            }
+
             messages.appendChild(messageElement);
             messages.scrollTop = messages.scrollHeight;
         }
 
-        function sendMessage() {
-            const input = document.getElementById('message-input');
-            const message = input.value.trim();
-            if (message) {
-                socket.send({ username: username, message: message });
-                input.value = '';
-            }
-        }
 
         function formatMessage(text, maxLength = 35) {
             const words = text.split(" ");
@@ -88,37 +95,54 @@
 
             words.forEach(word => {
                 if ((line + word).length > maxLength) {
-                    formattedText += line.trim() + "\n"; // Adiciona uma nova linha
-                    line = ""; // Reseta a linha
+                    formattedText += line.trim() + "\n";
+                    line = "";
                 }
                 line += word + " ";
             });
 
-            // Adiciona qualquer texto restante
             formattedText += line.trim();
             return formattedText;
         }
 
-        function addMessage(data) {
-            const messages = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message');
-            messageElement.classList.add(data.username === username ? 'sent' : 'received');
-
-            const nameElement = document.createElement('p');
-            nameElement.classList.add('username');
-            nameElement.textContent = `${data.username} - ${data.hora}`;
-
-            const textElement = document.createElement('p');
-            textElement.classList.add('text');
-            textElement.textContent = formatMessage(data.message);
-
-            messageElement.appendChild(nameElement);
-            messageElement.appendChild(textElement);
-            messages.appendChild(messageElement);
-            messages.scrollTop = messages.scrollHeight;
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            if (message) {
+                socket.send({ username: username, message: message });
+                input.value = '';
+                adjustTextareaHeight(); // Reseta a altura do textarea
+            }
         }
 
+        function adjustTextareaHeight() {
+            const textarea = document.getElementById('message-input');
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+
+        function triggerImageUpload() {
+            document.getElementById('image-input').click();
+        }
+
+        function sendImage() {
+            const imageInput = document.getElementById('image-input');
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    socket.send({
+                    username: username,
+                    message: event.target.result, // Base64 da imagem
+                    type: 'image'
+                    });
+                };
+                reader.readAsDataURL(file); // Converte a imagem em base64
+            }
+        }
+
+
     </script>
+    
 </body>
 </html>
